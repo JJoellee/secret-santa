@@ -509,9 +509,7 @@ function makeDb(code){
       sec._empty.hidden=!!els.length; sec._empty.lastChild.textContent=t("empty",p.name);
       nav.append(h("a",{href:"#p-"+p.id}, draw(DECOS[hash(p.id)%DECOS.length]), h("span",{text:p.name,dir:"auto"}), h("span",{class:"count",text:String(mine.length)})));
     });
-    if(people.length){ const add=h("button",{class:"add-chip",type:"button",text:t("addChip")}); add.addEventListener("click",()=>{ $("#add-person").scrollIntoView({behavior:"smooth",block:"center"}); $("#add-name").focus(); }); nav.append(add); }
     const postIds=new Set(posts.map(p=>p.id)); for(const id of [...postEls.keys()]) if(!postIds.has(id)) postEls.delete(id);
-    $("#add-person").hidden=false;
     $("#add-title").textContent = people.length? t("addTitle") : t("addFirst");
     setStatus(people.length? null : "none");
   }
