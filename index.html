@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Maalouly Family's Secret Santa</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Nunito:wght@400;600;800&family=Lalezar&family=Tajawal:wght@400;500;800&display=swap">
+<style>
+/* Layout: a snowy mailroom. Lights strung over the header, name chips, then one stocking-topped section per person holding gift-tag posts. */
+:root{
+  --bg:#eef4f2; --paper:#ffffff; --ink:#24322e; --muted:#5f716b;
+  --pine:#1f5a45; --pine-2:#2e7a5e; --berry:#c8323b; --gold:#d9a21b;
+  --line:#d3e0db; --tag:#fffaf0; --tag-2:#fdeeee; --tag-3:#eef7f1; --tag-4:#fdf6dc;
+  --chip:#ffffff; --snow:rgba(255,255,255,.95); --snow-edge:rgba(120,150,145,.35);
+  --display:"Mountains of Christmas","Comic Sans MS",cursive;
+  --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+:root:lang(ar){
+  --display:"Lalezar","Tajawal","Segoe UI",Tahoma,sans-serif;
+  --body:"Tajawal","Nunito","Segoe UI",Tahoma,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1d1a; --paper:#152925; --ink:#eef5f2; --muted:#9db3ab;
+  --pine:#3f9a76; --pine-2:#5bb892; --berry:#ec5a61; --gold:#f0bf45;
+  --line:#28433d; --tag:#1e322d; --tag-2:#36222a; --tag-3:#1a3a2f; --tag-4:#342e1a;
+  --chip:#1a312c; --snow:rgba(255,255,255,.8); --snow-edge:rgba(255,255,255,0);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1d1a; --paper:#152925; --ink:#eef5f2; --muted:#9db3ab;
+  --pine:#3f9a76; --pine-2:#5bb892; --berry:#ec5a61; --gold:#f0bf45;
+  --line:#28433d; --tag:#1e322d; --tag-2:#36222a; --tag-3:#1a3a2f; --tag-4:#342e1a;
+  --chip:#1a312c; --snow:rgba(255,255,255,.8); --snow-edge:rgba(255,255,255,0);
+  color-scheme:dark}
+
+[hidden]{display:none!important}
+img{max-width:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.gate{background:var(--paper);border:1.5px solid var(--line);border-radius:22px;padding:28px 20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;max-width:440px;margin:0 auto;width:100%;box-sizing:border-box}
+.gate h2{font-family:var(--display);font-size:2rem;margin:0;color:var(--pine);line-height:1.1}
+:lang(ar) .gate h2{font-weight:400}
+.gate form{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%}
+.gate input{flex:1 1 160px;min-width:0;border:1.5px solid var(--line);border-radius:999px;padding:10px 18px;font:inherit;font-size:1.2rem;letter-spacing:.25em;text-align:center;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
+.gate svg{width:64px;height:64px}
+#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px 64px;display:flex;flex-direction:column;gap:28px}
+
+.topbar{display:flex;justify-content:flex-end}
+.lang{border:1.5px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:6px 14px;font-weight:800;font-size:.95rem;display:inline-flex;align-items:center;gap:8px}
+.lang:hover{border-color:var(--pine)}
+.lang .alt{font-family:"Tajawal","Nunito",sans-serif}
+header{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:-18px}
+.lights{width:100%;max-width:760px;height:56px;overflow:visible}
+.bulb{animation:twinkle 2.4s ease-in-out infinite}
+.bulb:nth-child(3n){animation-delay:.8s}.bulb:nth-child(3n+1){animation-delay:1.6s}
+@keyframes twinkle{0%,100%{opacity:1}50%{opacity:.45}}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(2.4rem,7.5vw,4.2rem);line-height:1.05;margin:4px 0 0;color:var(--berry);text-wrap:balance;letter-spacing:.01em}
+:lang(ar) h1{font-weight:400;letter-spacing:0;line-height:1.3}
+h1 span{color:var(--pine);display:block}
+.lede{max-width:34rem;margin:0;color:var(--muted);text-wrap:balance}
+.header-art{display:flex;gap:14px;align-items:flex-end;margin-top:6px}
+.header-art svg{width:44px;height:44px}
+.header-art svg.big{width:64px;height:64px}
+
+nav.people{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+nav.people a,.add-chip{display:inline-flex;align-items:center;gap:6px;padding-block:6px;padding-inline:8px 14px;border-radius:999px;background:var(--chip);border:1.5px solid var(--line);color:var(--ink);text-decoration:none;font-weight:800;font-size:.95rem}
+nav.people a:hover{border-color:var(--pine)}
+nav.people a svg{width:24px;height:24px}
+nav.people a .count{font-weight:600;color:var(--muted);font-size:.82rem;font-variant-numeric:tabular-nums}
+.add-chip{border-style:dashed;cursor:pointer;font-family:inherit;padding-inline:14px;color:var(--pine)}
+
+.notice{background:var(--paper);border:1.5px dashed var(--line);border-radius:16px;padding:18px 20px;text-align:center;color:var(--muted)}
+.notice strong{color:var(--ink)}
+
+.person{background:var(--paper);border:1.5px solid var(--line);border-radius:22px;padding:0 20px 22px;position:relative;scroll-margin-top:16px}
+.person-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:-18px}
+.person-head .stocking{width:58px;height:70px;flex:none;filter:drop-shadow(0 3px 0 rgba(0,0,0,.08))}
+.person-head h2{font-family:var(--display);font-size:2.1rem;line-height:1;margin:0 0 4px;color:var(--pine);min-width:0;overflow-wrap:anywhere}
+.person-head .meta{color:var(--muted);font-size:.9rem;margin-bottom:8px;font-variant-numeric:tabular-nums}
+.person-head .spacer{flex:1}
+.person-head .actions{display:flex;gap:8px;margin-bottom:6px;align-items:center}
+
+button{font-family:inherit;cursor:pointer}
+.btn{border:none;border-radius:999px;padding:9px 18px;font-weight:800;font-size:.95rem;background:var(--berry);color:#fff}
+.btn:hover{filter:brightness(1.06)}
+.btn:disabled{opacity:.55;cursor:wait}
+.btn.ghost{background:transparent;color:var(--muted);border:1.5px solid var(--line);padding:7px 14px;font-weight:600}
+.btn.small{padding:5px 12px;font-size:.82rem}
+.link{background:none;border:none;color:var(--muted);font-size:.8rem;text-decoration:underline;padding:2px}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.composer{margin-top:14px;border:2px dashed var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:5px 14px;font-weight:700;font-size:.9rem}
+.tabs button[aria-pressed="true"]{background:var(--pine);border-color:var(--pine);color:#fff}
+.composer textarea,.composer input[type=text]{width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;background:var(--paper);color:var(--ink);resize:vertical}
+.composer textarea{min-height:96px}
+.drop{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1.5px solid var(--line);background:var(--paper);border-radius:12px;padding:10px 12px;font-size:.92rem;color:var(--muted)}
+.drop input{max-width:100%;font:inherit;color:var(--ink)}
+.preview{max-height:180px;border-radius:10px;display:block}
+.deco-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.88rem;color:var(--muted)}
+.deco-row button{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);padding:4px}
+.deco-row button[aria-pressed="true"]{border-color:var(--berry);box-shadow:0 0 0 2px var(--berry) inset}
+.deco-row svg{width:100%;height:100%}
+.composer-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.hint{font-size:.85rem;color:var(--muted)}
+.err{color:var(--berry);font-weight:700;font-size:.9rem}
+
+.posts{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;margin-top:18px;align-items:start}
+.empty{color:var(--muted);font-size:.95rem;margin-top:14px;display:flex;align-items:center;gap:10px}
+.empty svg{width:34px;height:34px;flex:none}
+
+.tag{position:relative;background:var(--tag);border:1.5px solid var(--line);border-radius:18px;border-start-start-radius:6px;padding:26px 16px 14px;min-width:0;transform:rotate(var(--r,0deg));transition:transform .2s}
+.tag:hover{transform:rotate(0deg) translateY(-2px)}
+.tag.c1{background:var(--tag-2)}.tag.c2{background:var(--tag-3)}.tag.c3{background:var(--tag-4)}
+.tag::before{content:"";position:absolute;top:10px;inset-inline-start:14px;width:10px;height:10px;border-radius:50%;background:var(--bg);border:1.5px solid var(--line)}
+.tag::after{content:"";position:absolute;top:-14px;inset-inline-start:17px;width:2px;height:26px;background:var(--berry);border-radius:2px;transform:rotate(-14deg)}
+.tag .deco{position:absolute;top:-16px;inset-inline-end:10px;width:40px;height:40px}
+.tag .text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:1.02rem}
+.tag img.photo{width:100%;border-radius:8px;display:block;background:var(--paper);border:6px solid var(--paper);box-sizing:border-box;box-shadow:0 2px 0 var(--line)}
+.tag .caption{margin-top:8px;overflow-wrap:anywhere;white-space:pre-wrap}
+.tag audio{width:100%;margin-top:4px}
+.voice-btn{display:flex;align-items:center;gap:10px;width:100%;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:12px;padding:8px 12px;font-weight:800}
+.voice-btn .play{width:32px;height:32px;border-radius:50%;background:var(--berry);display:grid;place-items:center;flex:none}
+.voice-btn .play svg{width:14px;height:14px}
+.tag-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:12px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
+.tag-foot .from{font-family:var(--display);font-size:1.05rem;color:var(--berry);font-weight:700}
+:lang(ar) .tag-foot .from{font-weight:400}
+
+.add-person{background:var(--paper);border:1.5px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
+.add-person h3{font-family:var(--display);font-size:1.8rem;margin:0;color:var(--pine);font-weight:700}
+:lang(ar) .add-person h3,:lang(ar) .person-head h2{font-weight:400}
+.add-person form{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;max-width:460px}
+.add-person input{flex:1 1 200px;min-width:0;border:1.5px solid var(--line);border-radius:999px;padding:9px 16px;font:inherit;background:var(--bg);color:var(--ink)}
+footer{text-align:center;color:var(--muted);font-size:.85rem}
+
+@media (prefers-reduced-motion: reduce){.bulb{animation:none}.tag,.tag:hover{transition:none}}
+@media (max-width:480px){.person{padding:0 14px 18px}.person-head h2{font-size:1.8rem}}
+</style>
+</head>
+<body>
+
+<!-- drawings -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="d-tree" viewBox="0 0 64 64">
+      <rect x="28" y="50" width="8" height="10" rx="2" fill="#8a5a3b" stroke="#3b2a22" stroke-width="2"/>
+      <path d="M32 8 L50 30 H42 L54 44 H44 L56 54 H8 L20 44 H10 L22 30 H14 Z" fill="#2e8a5f" stroke="#1d3d31" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="24" cy="44" r="3" fill="#e5484d"/><circle cx="40" cy="36" r="3" fill="#f2c14e"/><circle cx="36" cy="50" r="3" fill="#4fa3e0"/><circle cx="28" cy="28" r="2.6" fill="#e5484d"/>
+      <path d="M32 2 l2.6 5.4 5.9.8-4.3 4.1 1 5.8L32 15.3l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8Z" fill="#f2c14e" stroke="#8a6410" stroke-width="1.5" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="d-gift" viewBox="0 0 64 64">
+      <rect x="10" y="26" width="44" height="32" rx="4" fill="#e5484d" stroke="#5a1a1e" stroke-width="2.5"/>
+      <rect x="6" y="18" width="52" height="12" rx="3" fill="#f06a6f" stroke="#5a1a1e" stroke-width="2.5"/>
+      <rect x="28" y="18" width="8" height="40" fill="#f2c14e" stroke="#8a6410" stroke-width="2"/>
+      <path d="M32 18 C22 6 12 10 18 17 Z M32 18 C42 6 52 10 46 17 Z" fill="#f2c14e" stroke="#8a6410" stroke-width="2" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="d-snowman" viewBox="0 0 64 64">
+      <circle cx="32" cy="45" r="15" fill="#fff" stroke="#3a4a55" stroke-width="2.5"/>
+      <circle cx="32" cy="22" r="11" fill="#fff" stroke="#3a4a55" stroke-width="2.5"/>
+      <rect x="22" y="4" width="20" height="10" rx="2" fill="#2b2f3a"/><rect x="18" y="12" width="28" height="4" rx="2" fill="#2b2f3a"/>
+      <circle cx="28" cy="20" r="1.8" fill="#2b2f3a"/><circle cx="36" cy="20" r="1.8" fill="#2b2f3a"/>
+      <path d="M32 23 L40 25.5 L32 27 Z" fill="#f08a24"/>
+      <path d="M22 32 Q32 37 42 32 L44 36 Q32 41 20 36 Z" fill="#e5484d" stroke="#5a1a1e" stroke-width="1.5"/>
+      <circle cx="32" cy="42" r="1.8" fill="#2b2f3a"/><circle cx="32" cy="49" r="1.8" fill="#2b2f3a"/>
+      <circle cx="26" cy="25" r="2" fill="#f7a5a8" opacity=".8"/><circle cx="38" cy="25" r="2" fill="#f7a5a8" opacity=".8"/>
+    </symbol>
+    <symbol id="d-star" viewBox="0 0 64 64">
+      <path d="M32 5 l7.8 16 17.6 2.5-12.7 12.4 3 17.5L32 45.2 16.3 53.4l3-17.5L6.6 23.5l17.6-2.5Z" fill="#f2c14e" stroke="#8a6410" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="26" cy="32" r="2" fill="#5a3d08"/><circle cx="38" cy="32" r="2" fill="#5a3d08"/>
+      <path d="M28 38 Q32 41 36 38" fill="none" stroke="#5a3d08" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="d-holly" viewBox="0 0 64 64">
+      <path d="M32 34 C22 20 10 26 6 22 C8 30 4 34 8 38 C14 36 20 42 32 34 Z" fill="#2e8a5f" stroke="#1d3d31" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M32 34 C42 20 54 26 58 22 C56 30 60 34 56 38 C50 36 44 42 32 34 Z" fill="#3aa070" stroke="#1d3d31" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="27" cy="38" r="5" fill="#e5484d" stroke="#5a1a1e" stroke-width="2"/><circle cx="37" cy="38" r="5" fill="#e5484d" stroke="#5a1a1e" stroke-width="2"/><circle cx="32" cy="45" r="5" fill="#e5484d" stroke="#5a1a1e" stroke-width="2"/>
+    </symbol>
+    <symbol id="d-cocoa" viewBox="0 0 64 64">
+      <path d="M22 8 q-4 6 0 10 M32 6 q-4 6 0 12 M42 8 q-4 6 0 10" fill="none" stroke="#9fb3c8" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M12 24 H48 V46 a10 10 0 0 1 -10 10 H22 a10 10 0 0 1 -10 -10 Z" fill="#4fa3e0" stroke="#1f3f5a" stroke-width="2.5"/>
+      <path d="M48 30 h4 a7 7 0 0 1 0 14 h-4" fill="none" stroke="#1f3f5a" stroke-width="3"/>
+      <path d="M12 34 H48" stroke="#fff" stroke-width="4"/>
+      <circle cx="24" cy="44" r="1.8" fill="#1f3f5a"/><circle cx="36" cy="44" r="1.8" fill="#1f3f5a"/>
+      <path d="M27 49 Q30 52 33 49" fill="none" stroke="#1f3f5a" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="d-stocking" viewBox="0 0 58 70">
+      <path d="M14 14 H40 V42 L48 50 a10 10 0 0 1 -14 14 L16 48 a8 8 0 0 1 -2 -6 Z" fill="#e5484d" stroke="#5a1a1e" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M22 26 h12 M20 34 h14" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+      <rect x="10" y="4" width="34" height="13" rx="6" fill="#fff" stroke="#5a1a1e" stroke-width="2.5"/>
+      <circle cx="40" cy="58" r="3" fill="#fff" opacity=".6"/>
+    </symbol>
+    <symbol id="d-play" viewBox="0 0 16 16"><path d="M4 2 L14 8 L4 14 Z" fill="#fff"/></symbol>
+  </defs>
+</svg>
+
+<canvas id="snow" aria-hidden="true"></canvas>
+
+<div class="wrap">
+  <div class="topbar"><button class="lang" id="lang" type="button"></button></div>
+  <header>
+    <svg class="lights" viewBox="0 0 760 56" preserveAspectRatio="none" aria-hidden="true" id="lights"></svg>
+    <h1 id="h1"></h1>
+    <p class="lede" data-i18n="lede"></p>
+    <div class="header-art" aria-hidden="true">
+      <svg><use href="#d-holly"/></svg><svg><use href="#d-gift"/></svg><svg class="big"><use href="#d-tree"/></svg><svg class="big"><use href="#d-snowman"/></svg><svg><use href="#d-cocoa"/></svg><svg><use href="#d-star"/></svg>
+    </div>
+  </header>
+
+  <section class="gate" id="gate">
+    <svg aria-hidden="true"><use href="#d-gift"/></svg>
+    <h2 data-i18n="gateTitle"></h2>
+    <p class="hint" style="margin:0" data-i18n="gateHint"></p>
+    <form id="gate-form" autocomplete="off">
+      <input id="gate-code" type="password" inputmode="numeric" maxlength="40" required>
+      <button class="btn" type="submit" id="gate-btn" data-i18n="gateBtn"></button>
+    </form>
+    <div class="err" id="gate-err" hidden></div>
+  </section>
+
+  <nav class="people" id="nav" aria-label="People" hidden></nav>
+  <div id="status" class="notice" hidden></div>
+  <main id="sections" style="display:flex;flex-direction:column;gap:40px;padding-top:12px"></main>
+
+  <section class="add-person" id="add-person" hidden>
+    <svg width="56" height="56" aria-hidden="true"><use href="#d-stocking"/></svg>
+    <h3 id="add-title"></h3>
+    <p class="hint" style="margin:0" data-i18n="addHint"></p>
+    <form id="add-form" autocomplete="off">
+      <input id="add-name" type="text" maxlength="40" required>
+      <button class="btn" type="submit" data-i18n="addBtn"></button>
+    </form>
+    <div class="err" id="add-err" hidden></div>
+  </section>
+
+  <footer><span data-i18n="footer"></span> <button class="link" type="button" id="forget" hidden data-i18n="forget"></button></footer>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection as fcol, doc as fdoc, setDoc, addDoc, deleteDoc, getDocs, onSnapshot, query, orderBy as fOrderBy, limit as fLimit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDqFpwKtMKpPT9mUu-htVtm_3xArZbvbkY",
+  authDomain: "secret-santa-c2aca.firebaseapp.com",
+  projectId: "secret-santa-c2aca",
+  storageBucket: "secret-santa-c2aca.firebasestorage.app",
+  messagingSenderId: "963553352185",
+  appId: "1:963553352185:web:db0689f988862042b54528"
+};
+const fs = getFirestore(initializeApp(firebaseConfig));
+
+/* Small wrapper so the page talks to Firestore with the same calls it used before.
+   Every path lives under families/<code>/, and Firestore's security rules only open
+   the path for the right code, so the passcode is checked on the server. */
+function makeDb(code){
+  const P = "families/" + code + "/";
+  const wrapSnap = s => ({ docs: s.docs.map(d => ({ id: d.id, data: () => d.data() })), metadata: s.metadata });
+  const docApi = r => ({ id: r.id, set: d => setDoc(r, d), delete: () => deleteDoc(r) });
+  const queryApi = (path, cons) => ({
+    orderBy: (f, dir) => queryApi(path, [...cons, fOrderBy(f, dir || "asc")]),
+    limit: n => queryApi(path, [...cons, fLimit(n)]),
+    get: async () => wrapSnap(await getDocs(query(fcol(fs, P + path), ...cons))),
+    onSnapshot: (next, err) => onSnapshot(query(fcol(fs, P + path), ...cons), s => next(wrapSnap(s)), err)
+  });
+  return {
+    doc: path => docApi(fdoc(fs, P + path)),
+    collection: path => Object.assign(queryApi(path, []), {
+      doc: id => docApi(id ? fdoc(fs, P + path, id) : fdoc(fcol(fs, P + path))),
+      add: d => addDoc(fcol(fs, P + path), d)
+    })
+  };
+}
+
+(() => {
+  const STR = {
+    en: {
+      langBtn:"عربي", h1:"Maalouly Family's<span>Secret Santa</span>",
+      lede:"Leave a hint, a photo or a voice note for anyone in the family. Posts never show who left them, so your gift stays a surprise.",
+      footer:"Posts are anonymous: nothing about who wrote them is saved. Everyone with the family code can read every section.",
+      loading:"Opening the mailbox…",
+      none:"<strong>No stockings hung yet.</strong><br>Add each person below and they'll get their own section.",
+      gateTitle:"Enter the family code", gateHint:"Ask the organizer for the code. You only need to enter it once on this device.",
+      gateBtn:"Open the mailbox", gateWrong:"That code doesn't open this mailbox. Check it and try again.",
+      gateOffline:"Couldn't reach the mailbox. Check your connection and try again.", forget:"Forget the code on this device",
+      slow:"<strong>Still digging through the snow…</strong><br>The mailbox can't be reached yet. Check your connection; it will fill in on its own.",
+      failed:"<strong>The mailbox couldn't be opened.</strong><br>Reload the page to try again.",
+      addTitle:"Hang a new stocking", addFirst:"Start by adding everyone",
+      addHint:"Add each person in your Secret Santa so everyone gets their own section.",
+      namePh:"Their name", addBtn:"Add person", addChip:"+ Add person",
+      dup:n=>n+" already has a stocking.", addFail:"Couldn't add them. Check your connection and try again.",
+      leaveFor:n=>"Leave something for "+n,
+      count:c=>c===1?"1 surprise waiting":c+" surprises waiting", nothingYet:"Nothing yet",
+      empty:n=>`No hints for ${n} yet. Be the first Santa to leave one.`,
+      removePerson:"Remove person", removePersonQ:"Remove them and their posts? ", yes:"Yes", no:"No", removeFail:"Couldn't remove it.",
+      tNote:"Note", tPhoto:"Photo", tVoice:"Voice note",
+      notePh:n=>`Psst, ${n}… check under your doormat tonight!`, capPh:"Add a caption (optional)",
+      photoHint:"Photos are shrunk to fit; GIFs lose their animation.",
+      voiceHint:"Record a voice memo on your phone, then pick it here (up to 3 MB, about 2–3 minutes).",
+      sticker:"Sticker:", send:"Send anonymously", sending:"Wrapping…", cancel:"Cancel", nameNever:"Your name is never attached.",
+      writeFirst:"Write something first.", pickPhoto:"Pick a photo first.", pickVoice:"Pick a voice recording first.",
+      tooBig:"That recording is over 3 MB. Try a shorter one.", full:"The mailbox is full. Remove a few old posts and try again.",
+      sendFail:"Couldn't send it. Check your connection and try again.",
+      imgOpen:"That file could not be opened as an image.", imgBig:"That photo is too detailed to fit. Try a smaller one or a screenshot.", readFail:"That file could not be read.",
+      from:"From your Secret Santa", remove:"Remove", removeQ:"Remove this? ",
+      play:"Play voice note", unwrapping:"Unwrapping the voice note…", voiceFail:"This voice note couldn't be loaded. Try again in a moment.",
+      photoAlt:"Photo from a Secret Santa",
+      now:"just now", mins:n=>n+" min ago", hrs:n=>n+" h ago", yday:"yesterday", days:n=>n+" days ago"
+    },
+    ar: {
+      langBtn:"English", h1:"بابا نويل السرّي<span>لعائلة معلولي</span>",
+      lede:"اتركوا تلميحاً أو صورة أو رسالة صوتية لأي شخص في العائلة. لا يظهر اسم من يكتب، فتبقى الهدية مفاجأة.",
+      footer:"المنشورات بلا أسماء: لا يُحفظ أي شيء عن كاتبها. كل من لديه رمز العائلة يستطيع قراءة كل الأقسام.",
+      loading:"جارٍ فتح صندوق البريد…",
+      none:"<strong>لم تُعلَّق أي جوارب بعد.</strong><br>أضيفوا كل شخص في الأسفل ليحصل على قسمه الخاص.",
+      gateTitle:"أدخلوا رمز العائلة", gateHint:"اطلبوا الرمز من المنظِّم. يكفي إدخاله مرة واحدة على هذا الجهاز.",
+      gateBtn:"افتح صندوق البريد", gateWrong:"هذا الرمز لا يفتح صندوق البريد. تحقّقوا منه وحاولوا مجدداً.",
+      gateOffline:"تعذّر الوصول إلى صندوق البريد. تحقّقوا من الاتصال وحاولوا مجدداً.", forget:"انسَ الرمز على هذا الجهاز",
+      slow:"<strong>ما زلنا نحفر في الثلج…</strong><br>تعذّر الوصول إلى صندوق البريد حتى الآن. تحقّقوا من الاتصال، وستمتلئ الصفحة تلقائياً.",
+      failed:"<strong>تعذّر فتح صندوق البريد.</strong><br>أعيدوا تحميل الصفحة للمحاولة مجدداً.",
+      addTitle:"علّقوا جورباً جديداً", addFirst:"ابدأوا بإضافة الجميع",
+      addHint:"أضيفوا كل شخص في بابا نويل السرّي ليحصل كل واحد على قسمه.",
+      namePh:"الاسم", addBtn:"إضافة", addChip:"+ إضافة شخص",
+      dup:n=>"لدى "+n+" جورب بالفعل.", addFail:"تعذّرت الإضافة. تحقّقوا من الاتصال وحاولوا مجدداً.",
+      leaveFor:n=>"اترك شيئاً لـ"+n,
+      count:c=>c===1?"مفاجأة واحدة بالانتظار":c===2?"مفاجأتان بالانتظار":c+" مفاجآت بالانتظار", nothingYet:"لا شيء بعد",
+      empty:n=>`لا تلميحات لـ${n} بعد. كن أول من يترك واحداً.`,
+      removePerson:"حذف الشخص", removePersonQ:"حذفه مع منشوراته؟ ", yes:"نعم", no:"لا", removeFail:"تعذّر الحذف.",
+      tNote:"رسالة", tPhoto:"صورة", tVoice:"رسالة صوتية",
+      notePh:n=>`بسّ يا ${n}… طلّ تحت سجادة الباب الليلة!`, capPh:"أضف تعليقاً (اختياري)",
+      photoHint:"تُصغَّر الصور لتناسب الصفحة؛ صور GIF تفقد حركتها.",
+      voiceHint:"سجّل رسالة صوتية على هاتفك ثم اخترها هنا (حتى 3 ميغابايت، حوالي 2–3 دقائق).",
+      sticker:"ملصق:", send:"إرسال بلا اسم", sending:"جارٍ التغليف…", cancel:"إلغاء", nameNever:"اسمك لا يُرفق أبداً.",
+      writeFirst:"اكتب شيئاً أولاً.", pickPhoto:"اختر صورة أولاً.", pickVoice:"اختر تسجيلاً صوتياً أولاً.",
+      tooBig:"التسجيل أكبر من 3 ميغابايت. جرّب تسجيلاً أقصر.", full:"صندوق البريد ممتلئ. احذف بعض المنشورات القديمة وحاول مجدداً.",
+      sendFail:"تعذّر الإرسال. تحقّق من الاتصال وحاول مجدداً.",
+      imgOpen:"تعذّر فتح هذا الملف كصورة.", imgBig:"هذه الصورة كبيرة جداً. جرّب صورة أصغر أو لقطة شاشة.", readFail:"تعذّرت قراءة الملف.",
+      from:"من بابا نويل السرّي", remove:"حذف", removeQ:"حذف هذا؟ ",
+      play:"تشغيل الرسالة الصوتية", unwrapping:"جارٍ فتح الرسالة الصوتية…", voiceFail:"تعذّر تحميل الرسالة الصوتية. حاول بعد قليل.",
+      photoAlt:"صورة من بابا نويل السرّي",
+      now:"الآن", mins:n=>"منذ "+n+" د", hrs:n=>"منذ "+n+" س", yday:"أمس", days:n=>"منذ "+n+" أيام"
+    }
+  };
+  let lang="en"; try{ const s=localStorage.getItem("ss-lang"); if(s==="ar"||s==="en") lang=s; }catch(e){}
+  const t=(k,...a)=>{ const v=STR[lang][k]; return typeof v==="function"?v(...a):v; };
+
+  const DECOS = ["tree","gift","snowman","star","holly","cocoa"];
+  const $ = (s, el=document) => el.querySelector(s);
+  const h = (tag, props={}, ...kids) => { const e=document.createElement(tag); for (const [k,v] of Object.entries(props)) { if (k==="class") e.className=v; else if (k==="text") e.textContent=v; else if (k.startsWith("on")) e.addEventListener(k.slice(2),v); else e.setAttribute(k,v);} for (const k of kids) if (k!=null) e.append(k); return e; };
+  const NS="http://www.w3.org/2000/svg";
+  const draw = (name, cls) => { const s=document.createElementNS(NS,"svg"); if(cls) s.setAttribute("class",cls); s.setAttribute("aria-hidden","true"); const u=document.createElementNS(NS,"use"); u.setAttribute("href","#d-"+name); s.append(u); return s; };
+  const hash = s => { let x=0; for (const c of s) x=(x*31+c.charCodeAt(0))|0; return Math.abs(x); };
+
+  /* lights */
+  (() => { const svg=$("#lights"); const cols=["#e5484d","#f2c14e","#4fa3e0","#3aa070","#f07ac0"]; let p="M0 6"; const n=19;
+    for(let i=0;i<n;i++){ const x0=i*760/n, x1=(i+1)*760/n; p+=` Q${(x0+x1)/2} 26 ${x1} 6`; }
+    const path=document.createElementNS(NS,"path"); path.setAttribute("d",p); path.setAttribute("fill","none"); path.setAttribute("stroke","#3b4a44"); path.setAttribute("stroke-width","2"); svg.append(path);
+    for(let i=0;i<n;i++){ const x=(i+.5)*760/n; const g=document.createElementNS(NS,"g"); g.setAttribute("class","bulb");
+      g.innerHTML=`<rect x="${x-3}" y="14" width="6" height="6" fill="#3b4a44"/><ellipse cx="${x}" cy="28" rx="6" ry="9" fill="${cols[i%cols.length]}"/><ellipse cx="${x-2}" cy="25" rx="1.6" ry="3" fill="#fff" opacity=".6"/>`; svg.append(g); } })();
+
+  /* snow */
+  (() => { const c=$("#snow"), ctx=c.getContext("2d"); if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let W,H,flakes=[]; const resize=()=>{ W=c.width=innerWidth; H=c.height=innerHeight; const n=Math.min(90,Math.round(W*H/16000)); flakes=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,r:1+Math.random()*2.6,s:.3+Math.random()*.9,d:Math.random()*6})); };
+    resize(); addEventListener("resize",resize);
+    const tick=ts=>{ ctx.clearRect(0,0,W,H); const st=getComputedStyle(document.documentElement); ctx.fillStyle=st.getPropertyValue("--snow"); ctx.strokeStyle=st.getPropertyValue("--snow-edge");
+      for(const f of flakes){ f.y+=f.s; f.x+=Math.sin(ts/1400+f.d)*.35; if(f.y>H+4){f.y=-4;f.x=Math.random()*W;} ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,7); ctx.fill(); ctx.stroke(); }
+      requestAnimationFrame(tick); }; requestAnimationFrame(tick); })();
+
+  const ago = ms => { const s=(Date.now()-ms)/1000; if(s<60) return t("now"); if(s<3600) return t("mins",Math.floor(s/60)); if(s<86400) return t("hrs",Math.floor(s/3600)); const d=Math.floor(s/86400); if(d<7) return d===1?t("yday"):t("days",d); return new Date(ms).toLocaleDateString(lang==="ar"?"ar-LB":undefined,{month:"short",day:"numeric"}); };
+
+  /* state */
+  let db=null, people=[], posts=[], peopleLoaded=false, statusKey=null;
+  const sectionEls=new Map(), postEls=new Map();
+  const status=$("#status");
+  const setStatus=(key)=>{ statusKey=key; if(key==null){status.hidden=true;} else {status.hidden=false; status.innerHTML=t(key);} };
+
+  async function compressImage(file){
+    const url=URL.createObjectURL(file);
+    try{
+      const img=await new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error(t("imgOpen"))); i.src=url;});
+      for (const max of [1400,1100,900,700,520]) for (const q of [.82,.68,.55]) {
+        const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)); const cv=document.createElement("canvas");
+        cv.width=Math.round(img.naturalWidth*k); cv.height=Math.round(img.naturalHeight*k);
+        const cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(img,0,0,cv.width,cv.height);
+        const d=cv.toDataURL("image/jpeg",q); if(d.length<600000) return d;
+      }
+      throw new Error(t("imgBig"));
+    } finally { URL.revokeObjectURL(url); }
+  }
+  const readB64 = file => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]||""); r.onerror=()=>rej(new Error(t("readFail"))); r.readAsDataURL(file); });
+  const CHUNK=800000, MAX_AUDIO=3*1024*1024;
+
+  async function deletePost(p){
+    if(p.kind==="voice"){ const s=await db.collection("audio/"+p.id+"/parts").get(); for(const d of s.docs) await db.doc("audio/"+p.id+"/parts/"+d.id).delete(); }
+    await db.doc("posts/"+p.id).delete();
+  }
+
+  async function playVoice(post, holder){
+    holder.replaceChildren(h("span",{class:"hint",text:t("unwrapping")}));
+    try{
+      const snap=await db.collection("audio/"+post.id+"/parts").get();
+      const parts=snap.docs.map(d=>({i:+d.id,s:d.data().d})).sort((a,b)=>a.i-b.i);
+      if(!parts.length) throw 0;
+      const bin=atob(parts.map(p=>p.s).join("")); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+      const a=h("audio",{controls:"",preload:"auto"}); a.src=URL.createObjectURL(new Blob([bytes],{type:post.audioType||"audio/mp4"}));
+      holder.replaceChildren(a); a.play().catch(()=>{});
+    }catch(e){ holder.replaceChildren(h("span",{class:"err",text:t("voiceFail")})); }
+  }
+
+  function buildPost(p){
+    const c=hash(p.id); const el=h("article",{class:"tag c"+(c%4)}); el.style.setProperty("--r",((c%7)-3)*.6+"deg");
+    el.append(draw(DECOS.includes(p.deco)?p.deco:DECOS[c%DECOS.length],"deco"));
+    if(p.kind==="image" && p.image){ const img=h("img",{class:"photo",alt:p.text||t("photoAlt"),loading:"lazy"}); img.src=p.image; el.append(img); if(p.text) el.append(h("div",{class:"caption",text:p.text,dir:"auto"})); }
+    else if(p.kind==="voice"){ const holder=h("div"); const b=h("button",{class:"voice-btn",type:"button"}, h("span",{class:"play"},draw("play")), h("span",{text:t("play")}));
+      b.addEventListener("click",()=>playVoice(p,holder)); holder.append(b); el.append(holder); if(p.text) el.append(h("div",{class:"caption",text:p.text,dir:"auto"})); }
+    else el.append(h("div",{class:"text",text:p.text||"",dir:"auto"}));
+    const time=h("span",{text:ago(p.createdAt||Date.now())});
+    const foot=h("div",{class:"tag-foot"}, h("span",{class:"from",text:t("from")}));
+    const right=h("span",{}, time, " · ");
+    const rm=h("button",{class:"link",type:"button",text:t("remove")});
+    rm.addEventListener("click",()=>{ right.replaceChildren(h("span",{text:t("removeQ")}), h("button",{class:"link",type:"button",text:t("yes"),onclick:async()=>{ try{ await deletePost(p); }catch(e){ right.replaceChildren(h("span",{class:"err",text:t("removeFail")})); } }}), " ", h("button",{class:"link",type:"button",text:t("no"),onclick:()=>right.replaceChildren(time," · ",rm)})); });
+    right.append(rm); foot.append(right); el.append(foot);
+    el._time=time; el._t=p.createdAt;
+    return el;
+  }
+
+  function buildComposer(person, sec){
+    let kind="text", deco=DECOS[hash(person.id)%DECOS.length], file=null;
+    const box=h("div",{class:"composer",hidden:""});
+    const tabs=h("div",{class:"tabs",role:"group"});
+    const body=h("div",{style:"display:flex;flex-direction:column;gap:10px"});
+    const err=h("div",{class:"err",hidden:""});
+    const ta=h("textarea",{id:"t-"+person.id,maxlength:"2000",dir:"auto",placeholder:t("notePh",person.name)});
+    const cap=h("input",{type:"text",id:"c-"+person.id,maxlength:"300",dir:"auto",placeholder:t("capPh")});
+    const fileIn=h("input",{type:"file",id:"f-"+person.id});
+    const prev=h("div");
+    const drop=h("div",{class:"drop"}, fileIn, prev);
+    fileIn.addEventListener("change",()=>{ file=fileIn.files[0]||null; prev.replaceChildren(); err.hidden=true;
+      if(file && kind==="image"){ const i=h("img",{class:"preview",alt:""}); i.src=URL.createObjectURL(file); prev.append(i); }
+      if(file && kind==="voice"){ const a=h("audio",{controls:""}); a.src=URL.createObjectURL(file); prev.append(a); } });
+    const render=()=>{ body.replaceChildren(); file=null; fileIn.value=""; prev.replaceChildren(); err.hidden=true;
+      [...tabs.children].forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===kind)));
+      if(kind==="text") body.append(ta);
+      else { fileIn.accept=kind==="image"?"image/*":"audio/*"; body.append(drop, h("div",{class:"hint",text: kind==="image"?t("photoHint"):t("voiceHint")}), cap); } };
+    for (const [k,label] of [["text","tNote"],["image","tPhoto"],["voice","tVoice"]]) { const b=h("button",{type:"button","data-k":k,"aria-pressed":"false",text:t(label)}); b.addEventListener("click",()=>{kind=k;render();}); tabs.append(b); }
+    const decoRow=h("div",{class:"deco-row"}, h("span",{text:t("sticker")}));
+    for (const d of DECOS){ const b=h("button",{type:"button","aria-label":d,"aria-pressed":String(d===deco)}, draw(d)); b.addEventListener("click",()=>{deco=d;[...decoRow.querySelectorAll("button")].forEach(x=>x.setAttribute("aria-pressed",String(x===b)));}); decoRow.append(b); }
+    const send=h("button",{class:"btn",type:"button",text:t("send")});
+    const cancel=h("button",{class:"btn ghost small",type:"button",text:t("cancel")});
+    send.addEventListener("click",async()=>{
+      err.hidden=true; const fail=m=>{err.textContent=m; err.hidden=false;};
+      try{
+        send.disabled=true; send.textContent=t("sending");
+        const ref=db.collection("posts").doc(); const doc={to:person.id,kind,deco,createdAt:Date.now(),text:""};
+        if(kind==="text"){ doc.text=ta.value.trim(); if(!doc.text) throw new Error(t("writeFirst")); }
+        else if(kind==="image"){ if(!file) throw new Error(t("pickPhoto")); doc.image=await compressImage(file); doc.text=cap.value.trim(); }
+        else { if(!file) throw new Error(t("pickVoice")); if(file.size>MAX_AUDIO) throw new Error(t("tooBig"));
+          const b64=await readB64(file); const n=Math.ceil(b64.length/CHUNK);
+          for(let i=0;i<n;i++) await db.doc("audio/"+ref.id+"/parts/"+i).set({d:b64.slice(i*CHUNK,(i+1)*CHUNK)});
+          doc.audioType=(file.type||"audio/mp4"); doc.parts=n; doc.text=cap.value.trim(); }
+        await ref.set(doc);
+        ta.value=""; cap.value=""; render(); box.hidden=true; sec._open.hidden=false;
+      }catch(e){ fail(e&&e.message&&!e.code? e.message : (e&&e.code==="resource-exhausted"?t("full"):t("sendFail"))); }
+      finally{ send.disabled=false; send.textContent=t("send"); }
+    });
+    cancel.addEventListener("click",()=>{box.hidden=true; sec._open.hidden=false;});
+    box.append(tabs, body, decoRow, err, h("div",{class:"composer-foot"}, h("span",{class:"hint",text:t("nameNever")}), h("span",{style:"display:flex;gap:8px"},cancel,send)));
+    render();
+    return box;
+  }
+
+  function buildSection(person){
+    const sec=h("section",{class:"person",id:"p-"+person.id});
+    const title=h("h2",{dir:"auto"}); const meta=h("div",{class:"meta"});
+    const open=h("button",{class:"btn",type:"button"}); sec._open=open;
+    const actions=h("div",{class:"actions"}, open);
+    const rmWrap=h("span");
+    const rm=h("button",{class:"link",type:"button",text:t("removePerson")});
+    const resetRm=()=>rmWrap.replaceChildren(rm);
+    rm.addEventListener("click",()=>rmWrap.replaceChildren(h("span",{class:"hint",text:t("removePersonQ")}), h("button",{class:"link",type:"button",text:t("yes"),onclick:async()=>{ try{ for(const p of posts.filter(p=>p.to===person.id)) await deletePost(p); await db.doc("people/"+person.id).delete(); }catch(e){ rmWrap.replaceChildren(h("span",{class:"err",text:t("removeFail")})); } }}), " ", h("button",{class:"link",type:"button",text:t("no"),onclick:resetRm})));
+    resetRm();
+    const head=h("div",{class:"person-head"}, draw("stocking","stocking"), h("div",{style:"min-width:0"}, title, meta), h("div",{class:"spacer"}), actions);
+    const composer=buildComposer(person, sec);
+    open.addEventListener("click",()=>{composer.hidden=false; open.hidden=true; const f=composer.querySelector("textarea,input"); if(f) f.focus();});
+    const list=h("div",{class:"posts"}); const empty=h("div",{class:"empty"}, draw("snowman"), h("span"));
+    sec.append(head, composer, list, empty, h("div",{style:"display:flex;justify-content:flex-end;margin-top:10px"}, rmWrap));
+    sec._title=title; sec._meta=meta; sec._list=list; sec._empty=empty; sec._person=person;
+    return sec;
+  }
+
+  function render(){
+    if(!peopleLoaded) return;
+    const main=$("#sections"), nav=$("#nav");
+    const ids=new Set(people.map(p=>p.id));
+    for(const [id,el] of sectionEls) if(!ids.has(id)){ el.remove(); sectionEls.delete(id); }
+    nav.replaceChildren();
+    people.forEach((p,i)=>{
+      let sec=sectionEls.get(p.id); if(!sec){ sec=buildSection(p); sectionEls.set(p.id,sec); }
+      sec._person.name=p.name;
+      if(main.children[i]!==sec) main.insertBefore(sec, main.children[i]||null);
+      const mine=posts.filter(x=>x.to===p.id);
+      sec._title.textContent=p.name; sec._open.textContent=t("leaveFor",p.name);
+      sec._meta.textContent= mine.length? t("count",mine.length) : t("nothingYet");
+      const els=mine.map(x=>{ let e=postEls.get(x.id); if(!e){ e=buildPost(x); postEls.set(x.id,e);} e._time.textContent=ago(x.createdAt||Date.now()); return e; });
+      sec._list.replaceChildren(...els); sec._list.hidden=!els.length;
+      sec._empty.hidden=!!els.length; sec._empty.lastChild.textContent=t("empty",p.name);
+      nav.append(h("a",{href:"#p-"+p.id}, draw(DECOS[hash(p.id)%DECOS.length]), h("span",{text:p.name,dir:"auto"}), h("span",{class:"count",text:String(mine.length)})));
+    });
+    if(people.length){ const add=h("button",{class:"add-chip",type:"button",text:t("addChip")}); add.addEventListener("click",()=>{ $("#add-person").scrollIntoView({behavior:"smooth",block:"center"}); $("#add-name").focus(); }); nav.append(add); }
+    const postIds=new Set(posts.map(p=>p.id)); for(const id of [...postEls.keys()]) if(!postIds.has(id)) postEls.delete(id);
+    $("#add-person").hidden=false;
+    $("#add-title").textContent = people.length? t("addTitle") : t("addFirst");
+    setStatus(people.length? null : "none");
+  }
+  setInterval(()=>{ for(const e of postEls.values()) e._time.textContent=ago(e._t||Date.now()); },60000);
+
+  function applyLang(){
+    const root=document.documentElement; root.lang=lang; root.dir=lang==="ar"?"rtl":"ltr";
+    $("#lang").innerHTML=`<span class="${lang==="en"?"alt":""}">${t("langBtn")}</span>`;
+    $("#lang").setAttribute("aria-label", lang==="en"?"Switch to Arabic":"التبديل إلى الإنجليزية");
+    $("#h1").innerHTML=t("h1");
+    document.querySelectorAll("[data-i18n]").forEach(el=>el.textContent=t(el.dataset.i18n));
+    $("#add-name").placeholder=t("namePh"); $("#gate-code").setAttribute("aria-label",t("gateTitle")); $("#add-name").setAttribute("aria-label",t("namePh"));
+    $("#nav").setAttribute("aria-label", lang==="ar"?"الأشخاص":"People");
+    // rebuild sections and posts so every label switches language
+    for(const el of sectionEls.values()) el.remove(); sectionEls.clear(); postEls.clear();
+    if(statusKey) setStatus(statusKey);
+    render();
+  }
+  $("#lang").addEventListener("click",()=>{ lang=lang==="en"?"ar":"en"; try{localStorage.setItem("ss-lang",lang);}catch(e){} applyLang(); });
+  applyLang();
+
+  $("#add-form").addEventListener("submit",async e=>{
+    e.preventDefault(); const inp=$("#add-name"), errEl=$("#add-err"); const name=inp.value.trim().slice(0,40); if(!name||!db) return;
+    errEl.hidden=true;
+    if(people.some(p=>p.name.toLowerCase()===name.toLowerCase())){ errEl.textContent=t("dup",name); errEl.hidden=false; return; }
+    try{ await db.collection("people").add({name,createdAt:Date.now()}); inp.value=""; }
+    catch(err){ errEl.textContent=t("addFail"); errEl.hidden=false; }
+  });
+
+  function start(d){
+    db=d; $("#nav").hidden=false; setStatus("loading");
+    let got=0; const timer=setTimeout(()=>{ if(got<2) setStatus("slow"); },10000);
+    const done=()=>{ if(++got===2) clearTimeout(timer); };
+    let d1=false,d2=false, jumped=false;
+    db.collection("people").orderBy("createdAt").onSnapshot(s=>{ people=s.docs.map(d=>({id:d.id,...d.data()})); peopleLoaded=true; if(!s.metadata.fromCache && !d1){d1=true;done();} render();
+      if(location.hash && !jumped){ const el=document.getElementById(location.hash.slice(1)); if(el){ jumped=true; el.scrollIntoView(); } } },
+      e=>{ clearTimeout(timer); setStatus("failed"); });
+    db.collection("posts").orderBy("createdAt","desc").limit(1000).onSnapshot(s=>{ posts=s.docs.map(d=>({id:d.id,...d.data()})); if(!s.metadata.fromCache && !d2){d2=true;done();} render(); },
+      e=>{ clearTimeout(timer); });
+  }
+  const gate=$("#gate"), gateErr=$("#gate-err"), gateBtn=$("#gate-btn");
+  async function unlock(code, quiet){
+    gateErr.hidden=true; gateBtn.disabled=true;
+    try{
+      const d=makeDb(code);
+      await d.collection("people").limit(1).get(); // rejected by the server unless the code is right
+      try{ localStorage.setItem("ss-code",code); }catch(e){}
+      gate.hidden=true; $("#forget").hidden=false;
+      start(d);
+    }catch(e){
+      try{ localStorage.removeItem("ss-code"); }catch(_){}
+      gate.hidden=false;
+      if(!quiet){ gateErr.textContent = e && e.code==="permission-denied" ? t("gateWrong") : t("gateOffline"); gateErr.hidden=false; }
+    }finally{ gateBtn.disabled=false; }
+  }
+  $("#gate-form").addEventListener("submit",e=>{ e.preventDefault(); const c=$("#gate-code").value.trim(); if(!c) return;
+    if(!/^[A-Za-z0-9_-]{1,40}$/.test(c)){ gateErr.textContent=t("gateWrong"); gateErr.hidden=false; return; } unlock(c,false); });
+  $("#forget").addEventListener("click",()=>{ try{ localStorage.removeItem("ss-code"); }catch(e){} location.reload(); });
+  let saved=null; try{ saved=localStorage.getItem("ss-code"); }catch(e){}
+  if(saved && /^[A-Za-z0-9_-]{1,40}$/.test(saved)) unlock(saved,true);
+})();
+</script>
+</body>
+</html>
