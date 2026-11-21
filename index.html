@@ -421,7 +421,7 @@ function makeDb(code){
     const right=h("span",{}, time, " · ");
     const rm=h("button",{class:"link",type:"button",text:t("remove")});
     rm.addEventListener("click",()=>{ right.replaceChildren(h("span",{text:t("removeQ")}), h("button",{class:"link",type:"button",text:t("yes"),onclick:async()=>{ try{ await deletePost(p); }catch(e){ right.replaceChildren(h("span",{class:"err",text:t("removeFail")})); } }}), " ", h("button",{class:"link",type:"button",text:t("no"),onclick:()=>right.replaceChildren(time," · ",rm)})); });
-    right.append(rm); foot.append(right); el.append(foot);
+    foot.append(time); el.append(foot);
     el._time=time; el._t=p.createdAt;
     return el;
   }
@@ -486,7 +486,7 @@ function makeDb(code){
     const composer=buildComposer(person, sec);
     open.addEventListener("click",()=>{composer.hidden=false; open.hidden=true; const f=composer.querySelector("textarea,input"); if(f) f.focus();});
     const list=h("div",{class:"posts"}); const empty=h("div",{class:"empty"}, draw("snowman"), h("span"));
-    sec.append(head, composer, list, empty, h("div",{style:"display:flex;justify-content:flex-end;margin-top:10px"}, rmWrap));
+    sec.append(head, composer, list, empty);
     sec._title=title; sec._meta=meta; sec._list=list; sec._empty=empty; sec._person=person;
     return sec;
   }
