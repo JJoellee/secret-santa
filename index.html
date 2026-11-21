@@ -239,7 +239,7 @@ footer{text-align:center;color:var(--muted);font-size:.85rem}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection as fcol, doc as fdoc, setDoc, addDoc, deleteDoc, getDocs, onSnapshot, query, orderBy as fOrderBy, limit as fLimit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection as fcol, doc as fdoc, getDoc, setDoc, addDoc, deleteDoc, getDocs, onSnapshot, query, orderBy as fOrderBy, limit as fLimit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDqFpwKtMKpPT9mUu-htVtm_3xArZbvbkY",
@@ -257,7 +257,8 @@ const fs = getFirestore(initializeApp(firebaseConfig));
 function makeDb(code){
   const P = "families/" + code + "/";
   const wrapSnap = s => ({ docs: s.docs.map(d => ({ id: d.id, data: () => d.data() })), metadata: s.metadata });
-  const docApi = r => ({ id: r.id, set: d => setDoc(r, d), delete: () => deleteDoc(r) });
+  const docApi = r => ({ id: r.id, set: d => setDoc(r, d), delete: () => deleteDoc(r),
+    get: async () => { const s = await getDoc(r); return { id: s.id, exists: s.exists(), data: () => s.data() }; } });
   const queryApi = (path, cons) => ({
     orderBy: (f, dir) => queryApi(path, [...cons, fOrderBy(f, dir || "asc")]),
     limit: n => queryApi(path, [...cons, fLimit(n)]),
@@ -460,6 +461,7 @@ function makeDb(code){
           for(let i=0;i<n;i++) await db.doc("audio/"+ref.id+"/parts/"+i).set({d:b64.slice(i*CHUNK,(i+1)*CHUNK)});
           doc.audioType=(file.type||"audio/mp4"); doc.parts=n; doc.text=cap.value.trim(); }
         await ref.set(doc);
+        notifyOrganizer(person, doc);
         ta.value=""; cap.value=""; render(); box.hidden=true; sec._open.hidden=false;
       }catch(e){ fail(e&&e.message&&!e.code? e.message : (e&&e.code==="resource-exhausted"?t("full"):t("sendFail"))); }
       finally{ send.disabled=false; send.textContent=t("send"); }
@@ -539,8 +541,22 @@ function makeDb(code){
     catch(err){ errEl.textContent=t("addFail"); errEl.hidden=false; }
   });
 
+  /* Organizer alert: the ntfy channel name lives in Firestore behind the family code, not in this public file. */
+  let notifyTopic=null;
+  function notifyOrganizer(person, doc){
+    if(!notifyTopic) return;
+    const what = doc.kind==="image"?"a photo":doc.kind==="voice"?"a voice note":"a note";
+    const preview = (doc.text||"").slice(0,120);
+    fetch("https://ntfy.sh/", { method:"POST", body: JSON.stringify({
+      topic: notifyTopic, title: "New surprise for "+person.name,
+      message: "Someone left "+what+(preview?": "+preview:"."), tags:["gift"],
+      click: location.origin+location.pathname+"#p-"+person.id
+    })}).catch(()=>{});
+  }
+
   function start(d){
     db=d; $("#nav").hidden=false; setStatus("loading");
+    d.doc("config/notify").get().then(s=>{ if(s.exists) notifyTopic=s.data().ntfyTopic||null; }).catch(()=>{});
     let got=0; const timer=setTimeout(()=>{ if(got<2) setStatus("slow"); },10000);
     const done=()=>{ if(++got===2) clearTimeout(timer); };
     let d1=false,d2=false, jumped=false;
