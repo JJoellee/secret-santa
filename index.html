@@ -126,6 +126,12 @@ button{font-family:inherit;cursor:pointer}
 .voice-btn .play{width:32px;height:32px;border-radius:50%;background:var(--berry);display:grid;place-items:center;flex:none}
 .voice-btn .play svg{width:14px;height:14px}
 .tag-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:12px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
+.reacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.react{border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:2px 9px;font-size:.95rem;display:inline-flex;gap:4px;align-items:center;line-height:1.6}
+.react:hover{border-color:var(--pine)}
+.react[aria-pressed="true"]{border-color:var(--berry);background:var(--tag-2)}
+.react .n{font-size:.8rem;font-weight:800;font-variant-numeric:tabular-nums}
+.react .n:empty{display:none}
 .tag-foot .from{font-family:var(--display);font-size:1.05rem;color:var(--berry);font-weight:700}
 :lang(ar) .tag-foot .from{font-weight:400}
 
@@ -239,7 +245,7 @@ footer{text-align:center;color:var(--muted);font-size:.85rem}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection as fcol, doc as fdoc, getDoc, setDoc, addDoc, deleteDoc, getDocs, onSnapshot, query, orderBy as fOrderBy, limit as fLimit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection as fcol, doc as fdoc, getDoc, setDoc, addDoc, updateDoc, increment, deleteDoc, getDocs, onSnapshot, query, orderBy as fOrderBy, limit as fLimit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDqFpwKtMKpPT9mUu-htVtm_3xArZbvbkY",
@@ -257,7 +263,7 @@ const fs = getFirestore(initializeApp(firebaseConfig));
 function makeDb(code){
   const P = "families/" + code + "/";
   const wrapSnap = s => ({ docs: s.docs.map(d => ({ id: d.id, data: () => d.data() })), metadata: s.metadata });
-  const docApi = r => ({ id: r.id, set: d => setDoc(r, d), delete: () => deleteDoc(r),
+  const docApi = r => ({ id: r.id, set: d => setDoc(r, d), update: d => updateDoc(r, d), delete: () => deleteDoc(r),
     get: async () => { const s = await getDoc(r); return { id: s.id, exists: s.exists(), data: () => s.data() }; } });
   const queryApi = (path, cons) => ({
     orderBy: (f, dir) => queryApi(path, [...cons, fOrderBy(f, dir || "asc")]),
@@ -409,6 +415,16 @@ function makeDb(code){
     }catch(e){ holder.replaceChildren(h("span",{class:"err",text:t("voiceFail")})); }
   }
 
+  const REACTS=[["love","❤️"],["haha","😂"],["wow","😮"],["aww","🥹"],["yay","👏"]];
+  const myReacts=()=>{ try{ return JSON.parse(localStorage.getItem("ss-reacts")||"[]"); }catch(e){ return []; } };
+  async function toggleReact(id,k){
+    const list=myReacts(), key=id+":"+k, had=list.includes(key);
+    const next=had?list.filter(x=>x!==key):[...list,key];
+    try{ localStorage.setItem("ss-reacts",JSON.stringify(next)); }catch(e){}
+    try{ await db.doc("posts/"+id).update({["reactions."+k]: increment(had?-1:1)}); }
+    catch(e){ try{ localStorage.setItem("ss-reacts",JSON.stringify(list)); }catch(_){} }
+    const el=postEls.get(id); if(el){ const p=posts.find(x=>x.id===id); el._setReacts(p&&p.reactions); }
+  }
   function buildPost(p){
     const c=hash(p.id); const el=h("article",{class:"tag c"+(c%4)}); el.style.setProperty("--r",((c%7)-3)*.6+"deg");
     el.append(draw(DECOS.includes(p.deco)?p.deco:DECOS[c%DECOS.length],"deco"));
@@ -422,6 +438,12 @@ function makeDb(code){
     const rm=h("button",{class:"link",type:"button",text:t("remove")});
     rm.addEventListener("click",()=>{ right.replaceChildren(h("span",{text:t("removeQ")}), h("button",{class:"link",type:"button",text:t("yes"),onclick:async()=>{ try{ await deletePost(p); }catch(e){ right.replaceChildren(h("span",{class:"err",text:t("removeFail")})); } }}), " ", h("button",{class:"link",type:"button",text:t("no"),onclick:()=>right.replaceChildren(time," · ",rm)})); });
     foot.append(time); el.append(foot);
+    const rx=h("div",{class:"reacts"}), btns={};
+    for(const [k,em] of REACTS){ const b=h("button",{type:"button",class:"react","aria-pressed":"false","aria-label":k}, h("span",{text:em,"aria-hidden":"true"}), h("span",{class:"n"}));
+      b.addEventListener("click",()=>toggleReact(p.id,k)); btns[k]=b; rx.append(b); }
+    el.append(rx);
+    el._setReacts=r=>{ for(const [k] of REACTS){ const n=Math.max(0,(r&&r[k])||0); btns[k].lastChild.textContent=n?String(n):""; btns[k].setAttribute("aria-pressed",String(myReacts().includes(p.id+":"+k))); } };
+    el._setReacts(p.reactions);
     el._time=time; el._t=p.createdAt;
     return el;
   }
@@ -504,7 +526,7 @@ function makeDb(code){
       const mine=posts.filter(x=>x.to===p.id);
       sec._title.textContent=p.name; sec._open.textContent=t("leaveFor",p.name);
       sec._meta.textContent= mine.length? t("count",mine.length) : t("nothingYet");
-      const els=mine.map(x=>{ let e=postEls.get(x.id); if(!e){ e=buildPost(x); postEls.set(x.id,e);} e._time.textContent=ago(x.createdAt||Date.now()); return e; });
+      const els=mine.map(x=>{ let e=postEls.get(x.id); if(!e){ e=buildPost(x); postEls.set(x.id,e);} e._time.textContent=ago(x.createdAt||Date.now()); e._setReacts(x.reactions); return e; });
       sec._list.replaceChildren(...els); sec._list.hidden=!els.length;
       sec._empty.hidden=!!els.length; sec._empty.lastChild.textContent=t("empty",p.name);
       nav.append(h("a",{href:"#p-"+p.id}, draw(DECOS[hash(p.id)%DECOS.length]), h("span",{text:p.name,dir:"auto"}), h("span",{class:"count",text:String(mine.length)})));
