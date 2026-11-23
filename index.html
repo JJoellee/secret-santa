@@ -139,6 +139,8 @@ button{font-family:inherit;cursor:pointer}
 .reply{background:var(--paper);border:1.5px solid var(--line);border-radius:12px;border-start-start-radius:4px;padding:6px 10px}
 .tag .reply .text{font-size:.92rem}
 .reply-meta{font-size:.75rem;color:var(--muted)}
+.reply-meta .edited{font-style:italic}
+.reply-meta .link{font-size:.75rem;font-weight:800;color:var(--pine);padding:0}
 .reply-box,.edit-box{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .reply-box textarea,.edit-box textarea{width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;background:var(--paper);color:var(--ink);resize:vertical}
 .box-foot{display:flex;justify-content:flex-end;gap:6px}
@@ -419,8 +421,29 @@ function makeDb(code){
   }
 
   /* Posts are anonymous, so "mine" is only remembered on the device that sent them. That device can edit them. */
-  const myPosts=()=>{ try{ return JSON.parse(localStorage.getItem("ss-mine")||"[]"); }catch(e){ return []; } };
-  const rememberMine=id=>{ try{ localStorage.setItem("ss-mine",JSON.stringify([...myPosts(),id].slice(-500))); }catch(e){} };
+  const myIds=key=>{ try{ return JSON.parse(localStorage.getItem(key)||"[]"); }catch(e){ return []; } };
+  const rememberId=(key,id)=>{ try{ localStorage.setItem(key,JSON.stringify([...myIds(key),id].slice(-500))); }catch(e){} };
+  const myPosts=()=>myIds("ss-mine"), rememberMine=id=>rememberId("ss-mine",id);
+  const myReplies=()=>myIds("ss-mine-replies"), rememberReply=id=>rememberId("ss-mine-replies",id);
+
+  /* Swap `target` for an inline editor; onSave(value) writes it, then the editor closes. */
+  function openEditor(target, initial, {maxlength, required, rows, onSave, onClose}){
+    const ta=h("textarea",{maxlength:String(maxlength),rows:String(rows||3),dir:"auto","aria-label":t("edit")}); ta.value=initial||"";
+    const err=h("div",{class:"err",hidden:""});
+    const save=h("button",{class:"btn small",type:"button",text:t("save")});
+    const cancel=h("button",{class:"btn ghost small",type:"button",text:t("cancel")});
+    const box=h("div",{class:"edit-box"}, ta, err, h("div",{class:"box-foot"}, cancel, save));
+    const close=()=>{ box.replaceWith(target); onClose&&onClose(); };
+    cancel.addEventListener("click",close);
+    save.addEventListener("click",async()=>{
+      const v=ta.value.trim(); err.hidden=true;
+      if(required && !v){ err.textContent=t("writeFirst"); err.hidden=false; return; }
+      try{ save.disabled=true; await onSave(v); close(); }
+      catch(e){ err.textContent=t("editFail"); err.hidden=false; }
+      finally{ save.disabled=false; }
+    });
+    target.replaceWith(box); ta.focus();
+  }
 
   async function playVoice(post, holder){
     holder.replaceChildren(h("span",{class:"hint",text:t("unwrapping")}));
@@ -481,35 +504,46 @@ function makeDb(code){
     rsend.addEventListener("click",async()=>{
       const text=rta.value.trim(); rerr.hidden=true;
       if(!text){ rerr.textContent=t("writeFirst"); rerr.hidden=false; return; }
-      try{ rsend.disabled=true; await db.collection("replies").add({post:p.id,to:p.to,text,createdAt:Date.now()}); notifyReply(p,text); rta.value=""; closeReply(); }
+      try{ rsend.disabled=true; const ref=await db.collection("replies").add({post:p.id,to:p.to,text,createdAt:Date.now()}); rememberReply(ref.id); render(); notifyReply(p,text); rta.value=""; closeReply(); }
       catch(e){ rerr.textContent=t("replyFail"); rerr.hidden=false; }
       finally{ rsend.disabled=false; }
     });
 
     /* edit (only on the device that sent it) */
     editBtn.addEventListener("click",()=>{
-      const ta=h("textarea",{maxlength:p.kind==="text"?"2000":"300",rows:"3",dir:"auto","aria-label":t("edit")}); ta.value=cur.text||"";
-      const eerr=h("div",{class:"err",hidden:""});
-      const save=h("button",{class:"btn small",type:"button",text:t("save")});
-      const cancel=h("button",{class:"btn ghost small",type:"button",text:t("cancel")});
-      const box=h("div",{class:"edit-box"}, ta, eerr, h("div",{class:"box-foot"}, cancel, save));
-      const close=()=>{ box.replaceWith(body); editBtn.hidden=false; };
-      cancel.addEventListener("click",close);
-      save.addEventListener("click",async()=>{
-        const v=ta.value.trim(); eerr.hidden=true;
-        if(p.kind==="text" && !v){ eerr.textContent=t("writeFirst"); eerr.hidden=false; return; }
-        try{ save.disabled=true; await db.doc("posts/"+p.id).update({text:v, editedAt:Date.now()}); el._update({...cur,text:v,editedAt:Date.now()}); close(); }
-        catch(e){ eerr.textContent=t("editFail"); eerr.hidden=false; }
-        finally{ save.disabled=false; }
-      });
-      body.replaceWith(box); editBtn.hidden=true; ta.focus();
+      editBtn.hidden=true;
+      openEditor(body, cur.text, { maxlength:p.kind==="text"?2000:300, required:p.kind==="text",
+        onSave: async v=>{ const at=Date.now(); await db.doc("posts/"+p.id).update({text:v, editedAt:at}); el._update({...cur,text:v,editedAt:at}); },
+        onClose: ()=>{ editBtn.hidden=false; } });
     });
+
+    /* replies are kept as elements so an open reply editor survives live updates */
+    const replyEls=new Map();
+    const buildReply=r=>{
+      let rc=r;
+      const txt=h("div",{class:"text",dir:"auto"}), when=h("span"), red=h("span",{class:"edited"});
+      const reb=h("button",{class:"link",type:"button",text:t("edit")}), rebWrap=h("span",{hidden:""}," · ",reb);
+      const wrap=h("div",{class:"reply"}, txt, h("div",{class:"reply-meta"}, when, red, rebWrap));
+      reb.addEventListener("click",()=>{
+        reb.hidden=true;
+        openEditor(txt, rc.text, { maxlength:1000, required:true, rows:2,
+          onSave: async v=>{ const at=Date.now(); await db.doc("replies/"+rc.id).update({text:v, editedAt:at}); wrap._update({...rc,text:v,editedAt:at}); },
+          onClose: ()=>{ reb.hidden=false; } });
+      });
+      wrap._update=x=>{ rc=x; txt.textContent=x.text||""; when.textContent=ago(x.createdAt||Date.now());
+        red.textContent=x.editedAt? " · "+t("edited") : ""; rebWrap.hidden=!myReplies().includes(x.id); };
+      return wrap;
+    };
 
     el._update=(x, rs)=>{
       cur=x; body.textContent=x.text||""; body.hidden=x.kind!=="text" && !x.text;
       edited.textContent=x.editedAt? " · "+t("edited") : "";
       time.textContent=ago(x.createdAt||Date.now()); el._setReacts(x.reactions);
-      if(rs){ replyList.replaceChildren(...rs.map(r=>h("div",{class:"reply"}, h("div",{class:"text",text:r.text,dir:"auto"}), h("div",{class:"reply-meta",text:ago(r.createdAt||Date.now())})))); replyList.hidden=!rs.length; }
+      if(rs){
+        const keep=new Set(rs.map(r=>r.id)); for(const id of [...replyEls.keys()]) if(!keep.has(id)) replyEls.delete(id);
+        replyList.replaceChildren(...rs.map(r=>{ let e=replyEls.get(r.id); if(!e){ e=buildReply(r); replyEls.set(r.id,e); } e._update(r); return e; }));
+        replyList.hidden=!rs.length;
+      }
     };
     el._update(p, []);
     el._time=time; el._t=p.createdAt;
