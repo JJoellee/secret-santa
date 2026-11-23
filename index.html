@@ -132,6 +132,16 @@ button{font-family:inherit;cursor:pointer}
 .react[aria-pressed="true"]{border-color:var(--berry);background:var(--tag-2)}
 .react .n{font-size:.8rem;font-weight:800;font-variant-numeric:tabular-nums}
 .react .n:empty{display:none}
+.tag-acts{display:flex;gap:12px;margin-top:8px}
+.tag-acts .link{font-size:.85rem;font-weight:800;color:var(--pine)}
+.tag-foot .edited{font-style:italic}
+.replies{display:flex;flex-direction:column;gap:6px;margin-top:10px;border-top:1.5px dashed var(--line);padding-top:10px}
+.reply{background:var(--paper);border:1.5px solid var(--line);border-radius:12px;border-start-start-radius:4px;padding:6px 10px}
+.tag .reply .text{font-size:.92rem}
+.reply-meta{font-size:.75rem;color:var(--muted)}
+.reply-box,.edit-box{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.reply-box textarea,.edit-box textarea{width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;background:var(--paper);color:var(--ink);resize:vertical}
+.box-foot{display:flex;justify-content:flex-end;gap:6px}
 .tag-foot .from{font-family:var(--display);font-size:1.05rem;color:var(--berry);font-weight:700}
 :lang(ar) .tag-foot .from{font-weight:400}
 
@@ -313,6 +323,8 @@ function makeDb(code){
       from:"From your Secret Santa", remove:"Remove", removeQ:"Remove this? ",
       play:"Play voice note", unwrapping:"Unwrapping the voice note…", voiceFail:"This voice note couldn't be loaded. Try again in a moment.",
       photoAlt:"Photo from a Secret Santa",
+      edit:"Edit", save:"Save", edited:"edited", editFail:"Couldn't save the change. Check your connection and try again.",
+      reply:"Reply", replyPh:"Write a reply…", replySend:"Send reply", replyFail:"Couldn't send the reply. Check your connection and try again.",
       now:"just now", mins:n=>n+" min ago", hrs:n=>n+" h ago", yday:"yesterday", days:n=>n+" days ago"
     },
     ar: {
@@ -346,6 +358,8 @@ function makeDb(code){
       from:"من بابا نويل السرّي", remove:"حذف", removeQ:"حذف هذا؟ ",
       play:"تشغيل الرسالة الصوتية", unwrapping:"جارٍ فتح الرسالة الصوتية…", voiceFail:"تعذّر تحميل الرسالة الصوتية. حاول بعد قليل.",
       photoAlt:"صورة من بابا نويل السرّي",
+      edit:"تعديل", save:"حفظ", edited:"معدّل", editFail:"تعذّر حفظ التعديل. تحقّق من الاتصال وحاول مجدداً.",
+      reply:"ردّ", replyPh:"اكتب رداً…", replySend:"إرسال الرد", replyFail:"تعذّر إرسال الرد. تحقّق من الاتصال وحاول مجدداً.",
       now:"الآن", mins:n=>"منذ "+n+" د", hrs:n=>"منذ "+n+" س", yday:"أمس", days:n=>"منذ "+n+" أيام"
     }
   };
@@ -377,7 +391,7 @@ function makeDb(code){
   const ago = ms => { const s=(Date.now()-ms)/1000; if(s<60) return t("now"); if(s<3600) return t("mins",Math.floor(s/60)); if(s<86400) return t("hrs",Math.floor(s/3600)); const d=Math.floor(s/86400); if(d<7) return d===1?t("yday"):t("days",d); return new Date(ms).toLocaleDateString(lang==="ar"?"ar-LB":undefined,{month:"short",day:"numeric"}); };
 
   /* state */
-  let db=null, people=[], posts=[], peopleLoaded=false, statusKey=null;
+  let db=null, people=[], posts=[], allReplies=[], peopleLoaded=false, statusKey=null;
   const sectionEls=new Map(), postEls=new Map();
   const status=$("#status");
   const setStatus=(key)=>{ statusKey=key; if(key==null){status.hidden=true;} else {status.hidden=false; status.innerHTML=t(key);} };
@@ -400,8 +414,13 @@ function makeDb(code){
 
   async function deletePost(p){
     if(p.kind==="voice"){ const s=await db.collection("audio/"+p.id+"/parts").get(); for(const d of s.docs) await db.doc("audio/"+p.id+"/parts/"+d.id).delete(); }
+    for(const r of allReplies.filter(r=>r.post===p.id)) await db.doc("replies/"+r.id).delete();
     await db.doc("posts/"+p.id).delete();
   }
+
+  /* Posts are anonymous, so "mine" is only remembered on the device that sent them. That device can edit them. */
+  const myPosts=()=>{ try{ return JSON.parse(localStorage.getItem("ss-mine")||"[]"); }catch(e){ return []; } };
+  const rememberMine=id=>{ try{ localStorage.setItem("ss-mine",JSON.stringify([...myPosts(),id].slice(-500))); }catch(e){} };
 
   async function playVoice(post, holder){
     holder.replaceChildren(h("span",{class:"hint",text:t("unwrapping")}));
@@ -428,22 +447,71 @@ function makeDb(code){
   function buildPost(p){
     const c=hash(p.id); const el=h("article",{class:"tag c"+(c%4)}); el.style.setProperty("--r",((c%7)-3)*.6+"deg");
     el.append(draw(DECOS.includes(p.deco)?p.deco:DECOS[c%DECOS.length],"deco"));
-    if(p.kind==="image" && p.image){ const img=h("img",{class:"photo",alt:p.text||t("photoAlt"),loading:"lazy"}); img.src=p.image; el.append(img); if(p.text) el.append(h("div",{class:"caption",text:p.text,dir:"auto"})); }
+    let body; // the editable text: the note itself, or a photo/voice caption
+    if(p.kind==="image" && p.image){ const img=h("img",{class:"photo",alt:p.text||t("photoAlt"),loading:"lazy"}); img.src=p.image; el.append(img); body=h("div",{class:"caption",dir:"auto"}); }
     else if(p.kind==="voice"){ const holder=h("div"); const b=h("button",{class:"voice-btn",type:"button"}, h("span",{class:"play"},draw("play")), h("span",{text:t("play")}));
-      b.addEventListener("click",()=>playVoice(p,holder)); holder.append(b); el.append(holder); if(p.text) el.append(h("div",{class:"caption",text:p.text,dir:"auto"})); }
-    else el.append(h("div",{class:"text",text:p.text||"",dir:"auto"}));
-    const time=h("span",{text:ago(p.createdAt||Date.now())});
-    const foot=h("div",{class:"tag-foot"}, h("span",{class:"from",text:t("from")}));
-    const right=h("span",{}, time, " · ");
-    const rm=h("button",{class:"link",type:"button",text:t("remove")});
-    rm.addEventListener("click",()=>{ right.replaceChildren(h("span",{text:t("removeQ")}), h("button",{class:"link",type:"button",text:t("yes"),onclick:async()=>{ try{ await deletePost(p); }catch(e){ right.replaceChildren(h("span",{class:"err",text:t("removeFail")})); } }}), " ", h("button",{class:"link",type:"button",text:t("no"),onclick:()=>right.replaceChildren(time," · ",rm)})); });
-    foot.append(time); el.append(foot);
+      b.addEventListener("click",()=>playVoice(p,holder)); holder.append(b); el.append(holder); body=h("div",{class:"caption",dir:"auto"}); }
+    else body=h("div",{class:"text",dir:"auto"});
+    el.append(body);
+    const time=h("span",{text:ago(p.createdAt||Date.now())}), edited=h("span",{class:"edited"});
+    el.append(h("div",{class:"tag-foot"}, h("span",{class:"from",text:t("from")}), h("span",{}, time, edited)));
     const rx=h("div",{class:"reacts"}), btns={};
     for(const [k,em] of REACTS){ const b=h("button",{type:"button",class:"react","aria-pressed":"false","aria-label":k}, h("span",{text:em,"aria-hidden":"true"}), h("span",{class:"n"}));
       b.addEventListener("click",()=>toggleReact(p.id,k)); btns[k]=b; rx.append(b); }
     el.append(rx);
     el._setReacts=r=>{ for(const [k] of REACTS){ const n=Math.max(0,(r&&r[k])||0); btns[k].lastChild.textContent=n?String(n):""; btns[k].setAttribute("aria-pressed",String(myReacts().includes(p.id+":"+k))); } };
-    el._setReacts(p.reactions);
+
+    let cur=p;
+    const acts=h("div",{class:"tag-acts"});
+    const replyBtn=h("button",{class:"link",type:"button",text:t("reply")}); acts.append(replyBtn);
+    const editBtn=h("button",{class:"link",type:"button",text:t("edit")}); if(myPosts().includes(p.id)) acts.append(editBtn);
+    const replyList=h("div",{class:"replies",hidden:""});
+    const replyBox=h("div",{class:"reply-box",hidden:""});
+    el.append(acts, replyList, replyBox);
+
+    /* reply */
+    const rta=h("textarea",{maxlength:"1000",rows:"2",dir:"auto",placeholder:t("replyPh"),"aria-label":t("reply")});
+    const rerr=h("div",{class:"err",hidden:""});
+    const rsend=h("button",{class:"btn small",type:"button",text:t("replySend")});
+    const rcancel=h("button",{class:"btn ghost small",type:"button",text:t("cancel")});
+    replyBox.append(rta, rerr, h("div",{class:"box-foot"}, rcancel, rsend));
+    const closeReply=()=>{ replyBox.hidden=true; replyBtn.hidden=false; rerr.hidden=true; };
+    replyBtn.addEventListener("click",()=>{ replyBox.hidden=false; replyBtn.hidden=true; rta.focus(); });
+    rcancel.addEventListener("click",closeReply);
+    rsend.addEventListener("click",async()=>{
+      const text=rta.value.trim(); rerr.hidden=true;
+      if(!text){ rerr.textContent=t("writeFirst"); rerr.hidden=false; return; }
+      try{ rsend.disabled=true; await db.collection("replies").add({post:p.id,to:p.to,text,createdAt:Date.now()}); notifyReply(p,text); rta.value=""; closeReply(); }
+      catch(e){ rerr.textContent=t("replyFail"); rerr.hidden=false; }
+      finally{ rsend.disabled=false; }
+    });
+
+    /* edit (only on the device that sent it) */
+    editBtn.addEventListener("click",()=>{
+      const ta=h("textarea",{maxlength:p.kind==="text"?"2000":"300",rows:"3",dir:"auto","aria-label":t("edit")}); ta.value=cur.text||"";
+      const eerr=h("div",{class:"err",hidden:""});
+      const save=h("button",{class:"btn small",type:"button",text:t("save")});
+      const cancel=h("button",{class:"btn ghost small",type:"button",text:t("cancel")});
+      const box=h("div",{class:"edit-box"}, ta, eerr, h("div",{class:"box-foot"}, cancel, save));
+      const close=()=>{ box.replaceWith(body); editBtn.hidden=false; };
+      cancel.addEventListener("click",close);
+      save.addEventListener("click",async()=>{
+        const v=ta.value.trim(); eerr.hidden=true;
+        if(p.kind==="text" && !v){ eerr.textContent=t("writeFirst"); eerr.hidden=false; return; }
+        try{ save.disabled=true; await db.doc("posts/"+p.id).update({text:v, editedAt:Date.now()}); el._update({...cur,text:v,editedAt:Date.now()}); close(); }
+        catch(e){ eerr.textContent=t("editFail"); eerr.hidden=false; }
+        finally{ save.disabled=false; }
+      });
+      body.replaceWith(box); editBtn.hidden=true; ta.focus();
+    });
+
+    el._update=(x, rs)=>{
+      cur=x; body.textContent=x.text||""; body.hidden=x.kind!=="text" && !x.text;
+      edited.textContent=x.editedAt? " · "+t("edited") : "";
+      time.textContent=ago(x.createdAt||Date.now()); el._setReacts(x.reactions);
+      if(rs){ replyList.replaceChildren(...rs.map(r=>h("div",{class:"reply"}, h("div",{class:"text",text:r.text,dir:"auto"}), h("div",{class:"reply-meta",text:ago(r.createdAt||Date.now())})))); replyList.hidden=!rs.length; }
+    };
+    el._update(p, []);
     el._time=time; el._t=p.createdAt;
     return el;
   }
@@ -483,6 +551,7 @@ function makeDb(code){
           for(let i=0;i<n;i++) await db.doc("audio/"+ref.id+"/parts/"+i).set({d:b64.slice(i*CHUNK,(i+1)*CHUNK)});
           doc.audioType=(file.type||"audio/mp4"); doc.parts=n; doc.text=cap.value.trim(); }
         await ref.set(doc);
+        rememberMine(ref.id);
         notifyOrganizer(person, doc);
         ta.value=""; cap.value=""; render(); box.hidden=true; sec._open.hidden=false;
       }catch(e){ fail(e&&e.message&&!e.code? e.message : (e&&e.code==="resource-exhausted"?t("full"):t("sendFail"))); }
@@ -519,6 +588,7 @@ function makeDb(code){
     const ids=new Set(people.map(p=>p.id));
     for(const [id,el] of sectionEls) if(!ids.has(id)){ el.remove(); sectionEls.delete(id); }
     nav.replaceChildren();
+    const repliesBy=new Map(); for(const r of allReplies){ if(!repliesBy.has(r.post)) repliesBy.set(r.post,[]); repliesBy.get(r.post).push(r); }
     people.forEach((p,i)=>{
       let sec=sectionEls.get(p.id); if(!sec){ sec=buildSection(p); sectionEls.set(p.id,sec); }
       sec._person.name=p.name;
@@ -526,7 +596,7 @@ function makeDb(code){
       const mine=posts.filter(x=>x.to===p.id);
       sec._title.textContent=p.name; sec._open.textContent=t("leaveFor",p.name);
       sec._meta.textContent= mine.length? t("count",mine.length) : t("nothingYet");
-      const els=mine.map(x=>{ let e=postEls.get(x.id); if(!e){ e=buildPost(x); postEls.set(x.id,e);} e._time.textContent=ago(x.createdAt||Date.now()); e._setReacts(x.reactions); return e; });
+      const els=mine.map(x=>{ let e=postEls.get(x.id); if(!e){ e=buildPost(x); postEls.set(x.id,e);} e._update(x, repliesBy.get(x.id)||[]); return e; });
       sec._list.replaceChildren(...els); sec._list.hidden=!els.length;
       sec._empty.hidden=!!els.length; sec._empty.lastChild.textContent=t("empty",p.name);
       nav.append(h("a",{href:"#p-"+p.id}, draw(DECOS[hash(p.id)%DECOS.length]), h("span",{text:p.name,dir:"auto"}), h("span",{class:"count",text:String(mine.length)})));
@@ -573,6 +643,15 @@ function makeDb(code){
       click: location.origin+location.pathname+"#p-"+person.id
     })}).catch(()=>{});
   }
+  function notifyReply(post, text){
+    if(!notifyTopic) return;
+    const person=people.find(x=>x.id===post.to); const name=person?person.name:"someone";
+    fetch("https://ntfy.sh/", { method:"POST", body: JSON.stringify({
+      topic: notifyTopic, title: "New reply in "+name+"'s stocking",
+      message: "Someone replied: "+text.slice(0,120), tags:["speech_balloon"],
+      click: location.origin+location.pathname+"#p-"+post.to
+    })}).catch(()=>{});
+  }
 
   function start(d){
     db=d; $("#nav").hidden=false; setStatus("loading");
@@ -585,6 +664,7 @@ function makeDb(code){
       e=>{ clearTimeout(timer); setStatus("failed"); });
     db.collection("posts").orderBy("createdAt","desc").limit(1000).onSnapshot(s=>{ posts=s.docs.map(d=>({id:d.id,...d.data()})); if(!s.metadata.fromCache && !d2){d2=true;done();} render(); },
       e=>{ clearTimeout(timer); });
+    db.collection("replies").orderBy("createdAt").limit(3000).onSnapshot(s=>{ allReplies=s.docs.map(d=>({id:d.id,...d.data()})); render(); }, ()=>{});
   }
   const gate=$("#gate"), gateErr=$("#gate-err"), gateBtn=$("#gate-btn");
   async function unlock(code, quiet){
